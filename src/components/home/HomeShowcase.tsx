@@ -28,6 +28,7 @@ import {
 import { getTeamLogoSrc } from "@/lib/teamLogo";
 import { JerseyGraphic } from "@/components/catalog/JerseyGraphic";
 import { NbaSymbol, NflSymbol } from "@/components/catalog/LeagueSymbols";
+import { TeamLogoBar } from "@/components/catalog/TeamLogoBar";
 
 interface HomeShowcaseProps {
   featuredJerseys: JerseyProduct[];
@@ -55,8 +56,11 @@ export function HomeShowcase({ featuredJerseys }: HomeShowcaseProps) {
 
   return (
     <div className="bg-[#0D0F12] text-[#F4F5F7] arena-grain overflow-x-hidden">
+      {/* NFLShop-style 32-Team Quick Logo Bar */}
+      <TeamLogoBar variant="dark" />
+
       {/* Dark Arena Hero with Big Store Emblem + Animated Mascots */}
-      <section className="relative min-h-[calc(100dvh-110px)] flex items-center overflow-hidden border-b border-[#272C35]">
+      <section className="relative min-h-[auto] lg:min-h-[calc(100dvh-164px)] flex items-center overflow-hidden border-b border-[#272C35]">
         <Image
           src="/images/hero-arena.jpg"
           alt="Vestiário Snap Store com camisas de futebol americano e basquete"
@@ -275,14 +279,14 @@ export function HomeShowcase({ featuredJerseys }: HomeShowcaseProps) {
         </div>
       </div>
 
-      {/* Featured Drops Showcase — BRIGHT WHITE STUDIO CARDS so jerseys look 100% normal & vibrant */}
-      <section className="max-w-[1400px] mx-auto px-4 md:px-8 py-16 space-y-8">
+      {/* Featured Drops Showcase — BRIGHT WHITE STUDIO CARDS (2-col on mobile like NFLShop) */}
+      <section className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-8 py-12 md:py-16 space-y-6 md:space-y-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2 max-w-[60ch]">
             <span className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#D61F26]">
               Oferta Especial · 20% OFF
             </span>
-            <h2 className="font-display text-4xl md:text-5xl font-extrabold uppercase tracking-tight">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold uppercase tracking-tight">
               Destaques da NFL
             </h2>
             <p className="text-sm md:text-base text-[#9AA3B2]">
@@ -299,7 +303,7 @@ export function HomeShowcase({ featuredJerseys }: HomeShowcaseProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {featuredJerseys.map((jersey, idx) => {
             const discountPercent = getDiscountPercent(jersey.originalPrice, jersey.price);
             const isCommemorative = jersey.edition === "Throwback";
@@ -322,70 +326,70 @@ export function HomeShowcase({ featuredJerseys }: HomeShowcaseProps) {
                   className="group block bg-[#FFFFFF] text-[#111317] border border-[#272C35] hover:border-[#D61F26] rounded-[3px] overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_-15px_rgba(214,31,38,0.35)]"
                 >
                   {/* Clean White Studio Stage so jerseys appear bright & natural */}
-                  <div className="p-5 bg-[#FFFFFF] border-b border-[#E1E4E8] flex items-center justify-center aspect-square relative">
+                  <div className="p-3 sm:p-5 bg-[#FFFFFF] border-b border-[#E1E4E8] flex items-center justify-center aspect-square relative">
                     <div
                       className="absolute top-0 left-0 right-0 h-1.5"
                       style={{ backgroundColor: jersey.primaryColor }}
                     />
 
                     {logoSrc && (
-                      <div className="absolute top-3 left-3 z-10 w-8 h-8 rounded-[2px] bg-white border border-[#E1E4E8] p-1 flex items-center justify-center shadow-sm">
+                      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-[2px] bg-white border border-[#E1E4E8] p-1 flex items-center justify-center shadow-sm">
                         <Image
                           src={logoSrc}
                           alt={`Logo ${jersey.teamName}`}
                           width={24}
                           height={24}
-                          className="w-6 h-6 object-contain"
+                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
                         />
                       </div>
                     )}
 
                     {discountPercent > 0 ? (
-                      <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] bg-[#D61F26] text-white font-mono-tabular text-[11px] font-extrabold uppercase tracking-wider shadow-sm">
-                        <Tag size={12} weight="fill" />
-                        <span>-{discountPercent}% OFF</span>
+                      <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-[2px] bg-[#D61F26] text-white font-mono-tabular text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider shadow-sm">
+                        <Tag size={11} weight="fill" className="hidden sm:inline" />
+                        <span>-{discountPercent}%</span>
                       </span>
                     ) : (
-                      <span className="absolute top-3 right-3 z-10 px-2 py-1 rounded-[2px] bg-[#111317] text-[#FDE047] font-mono-tabular text-[10px] font-bold uppercase tracking-wider">
-                        Consultar Disp.
+                      <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-[2px] bg-[#111317] text-[#FDE047] font-mono-tabular text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+                        Consultar
                       </span>
                     )}
 
-                    <div className="w-48 h-48 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-32 h-32 sm:w-48 sm:h-48 group-hover:scale-105 transition-transform duration-300">
                       <JerseyGraphic jersey={jersey} />
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2 bg-[#FFFFFF]">
-                    <div className="flex items-center justify-between text-[11px] font-mono-tabular uppercase text-[#5A6270]">
+                  <div className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-2 bg-[#FFFFFF]">
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono-tabular uppercase text-[#5A6270]">
                       <span>{jersey.league.toUpperCase()}</span>
-                      <span>{jersey.divisionName}</span>
+                      <span className="truncate ml-1">{jersey.divisionName}</span>
                     </div>
-                    <h3 className="font-bold text-sm text-[#111317] group-hover:text-[#D61F26] transition-colors line-clamp-2 min-h-[2.5rem]">
+                    <h3 className="font-bold text-xs sm:text-sm text-[#111317] group-hover:text-[#D61F26] transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
                       {jersey.title}
                     </h3>
                     <div className="pt-1.5 border-t border-[#F0F2F4] space-y-1">
                       {jersey.originalPrice && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono-tabular text-xs text-[#8A93A2] line-through">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono-tabular text-[10px] sm:text-xs text-[#8A93A2] line-through">
                             De {formatBRL(jersey.originalPrice)}
                           </span>
-                          <span className="font-mono-tabular text-[10px] font-extrabold text-[#D61F26]">
+                          <span className="font-mono-tabular text-[9px] sm:text-[10px] font-extrabold text-[#D61F26]">
                             -{discountPercent}%
                           </span>
                         </div>
                       )}
-                      <div className="flex items-baseline justify-between">
-                        <span className="font-mono-tabular text-lg font-extrabold text-[#111317]">
+                      <div className="flex flex-wrap items-baseline justify-between gap-1">
+                        <span className="font-mono-tabular text-base sm:text-lg font-extrabold text-[#111317]">
                           {formatBRL(jersey.price)}
                         </span>
                         {isCommemorative ? (
-                          <span className="text-[10px] font-bold uppercase text-[#92400E] bg-[#FEF3C7] px-1.5 py-0.5 rounded-[2px]">
+                          <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[#92400E] bg-[#FEF3C7] px-1.5 py-0.5 rounded-[2px]">
                             Comemorativa
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold text-[#15803D] bg-[#ECFDF3] px-1.5 py-0.5 rounded-[2px]">
-                            2+ por {formatBRL(COMBO_UNIT_PRICE)}
+                          <span className="text-[9px] sm:text-[10px] font-bold text-[#15803D] bg-[#ECFDF3] px-1.5 py-0.5 rounded-[2px]">
+                            2+ {formatBRL(COMBO_UNIT_PRICE)}
                           </span>
                         )}
                       </div>

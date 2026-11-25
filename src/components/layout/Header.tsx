@@ -61,13 +61,13 @@ export function Header() {
       </div>
 
       {/* Main Nav Bar */}
-      <div className="max-w-[1400px] mx-auto h-[82px] px-4 md:px-8 flex items-center justify-between gap-4">
+      <div className="max-w-[1400px] mx-auto h-[68px] sm:h-[82px] px-3 sm:px-4 md:px-8 flex items-center justify-between gap-2 sm:gap-4">
         <Link
           href="/"
-          className="flex items-center gap-3.5 shrink-0 group focus:outline-none"
+          className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 group focus:outline-none"
           aria-label="Snap Store - Página Inicial"
         >
-          <div className="h-16 w-16 rounded-[4px] overflow-hidden bg-[#000000] border-2 border-[#D61F26]/70 group-hover:border-[#D61F26] shadow-[0_0_20px_-4px_rgba(214,31,38,0.45)] shrink-0 transition-all duration-300">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-[4px] overflow-hidden bg-[#000000] border-2 border-[#D61F26]/70 group-hover:border-[#D61F26] shadow-[0_0_20px_-4px_rgba(214,31,38,0.45)] shrink-0 transition-all duration-300">
             <Image
               src="/images/snap-store-logo.jpg"
               alt="Logo Snap Store"
@@ -78,11 +78,11 @@ export function Header() {
             />
           </div>
           <div className="flex flex-col leading-none">
-            <span className="font-display text-3xl font-extrabold tracking-tight uppercase">
+            <span className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight uppercase">
               SNAP STORE
             </span>
             <span
-              className={`font-mono-tabular text-[11px] tracking-[0.16em] uppercase mt-0.5 ${
+              className={`font-mono-tabular text-[9px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.16em] uppercase mt-0.5 ${
                 isArenaHome ? "text-[#9AA3B2]" : "text-[#5A6270]"
               }`}
             >
@@ -96,10 +96,10 @@ export function Header() {
             Início
           </Link>
           <Link href="/nfl" className={getLinkClasses("/nfl")}>
-            NFL (32 Times)
+            NFL
           </Link>
           <Link href="/nba" className={getLinkClasses("/nba")}>
-            NBA (Em breve)
+            NBA
           </Link>
         </nav>
 
@@ -121,6 +121,14 @@ export function Header() {
 
           {user ? (
             <div className="flex items-center gap-1">
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-[2px] bg-[#D61F26] hover:bg-[#B3171D] text-white text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
               <span
                 className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-[2px] text-xs font-bold border ${
                   isArenaHome
@@ -213,14 +221,14 @@ export function Header() {
             onClick={() => setMobileOpen(false)}
             className={getLinkClasses("/nfl")}
           >
-            NFL (32 Times)
+            NFL
           </Link>
           <Link
             href="/nba"
             onClick={() => setMobileOpen(false)}
             className={getLinkClasses("/nba")}
           >
-            NBA (30 Times)
+            NBA
           </Link>
           <a
             href={STORE_INSTAGRAM_URL}

@@ -16,32 +16,47 @@ export function AuthModal() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
 
   const resetForm = () => {
     setError("");
+    setInfoMessage("");
     setPassword("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInfoMessage("");
+    setSubmitting(true);
 
-    if (modalTab === "login") {
-      const res = login(email, password);
+    try {
+      if (modalTab === "login") {
+        const res = await login(email, password);
+        if (!res.ok) {
+          setError(res.error || "Não foi possível entrar.");
+        } else {
+          resetForm();
+        }
+        return;
+      }
+
+      const res = await register({ name, email, phone, password });
       if (!res.ok) {
-        setError(res.error || "Não foi possível entrar.");
+        setError(res.error || "Não foi possível concluir o cadastro.");
+      } else if (res.needsEmailConfirmation) {
+        setPassword("");
+        setInfoMessage(
+          res.message ||
+            "Cadastro realizado! Confirme seu e-mail para poder entrar."
+        );
       } else {
         resetForm();
       }
-      return;
-    }
-
-    const res = register({ name, email, phone, password });
-    if (!res.ok) {
-      setError(res.error || "Não foi possível concluir o cadastro.");
-    } else {
-      resetForm();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -108,6 +123,7 @@ export function AuthModal() {
                 onClick={() => {
                   setModalTab("login");
                   setError("");
+                  setInfoMessage("");
                 }}
                 className={`py-3 text-xs font-bold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                   modalTab === "login"
@@ -123,6 +139,7 @@ export function AuthModal() {
                 onClick={() => {
                   setModalTab("register");
                   setError("");
+                  setInfoMessage("");
                 }}
                 className={`py-3 text-xs font-bold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                   modalTab === "register"
@@ -206,10 +223,10 @@ export function AuthModal() {
                     id="auth-password"
                     type={showPassword ? "text" : "password"}
                     required
-                    minLength={4}
+                    minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 4 caracteres"
+                    placeholder="Mínimo 6 caracteres"
                     className="w-full pl-3.5 pr-10 py-2.5 rounded-[2px] border border-[#E1E4E8] text-sm text-[#111317] placeholder:text-[#8A93A2] focus:outline-none focus:border-[#111317]"
                   />
                   <button
@@ -232,11 +249,25 @@ export function AuthModal() {
                 </p>
               )}
 
+              {infoMessage && (
+                <p
+                  className="text-xs font-semibold text-[#15803D] bg-[#ECFDF3] border border-[#BBF7D0] px-3 py-2 rounded-[2px]"
+                  role="status"
+                >
+                  {infoMessage}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-3.5 px-5 rounded-[2px] bg-[#D61F26] hover:bg-[#B3171D] text-white font-bold text-xs uppercase tracking-wider transition-transform active:scale-[0.98] cursor-pointer"
+                disabled={submitting}
+                className="w-full py-3.5 px-5 rounded-[2px] bg-[#D61F26] hover:bg-[#B3171D] disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider transition-transform active:scale-[0.98] cursor-pointer"
               >
-                {modalTab === "login" ? "Entrar na Conta" : "Criar Minha Conta"}
+                {submitting
+                  ? "Aguarde..."
+                  : modalTab === "login"
+                  ? "Entrar na Conta"
+                  : "Criar Minha Conta"}
               </button>
 
               <p className="text-center text-xs text-[#5A6270]">
@@ -248,6 +279,7 @@ export function AuthModal() {
                       onClick={() => {
                         setModalTab("register");
                         setError("");
+                        setInfoMessage("");
                       }}
                       className="font-bold text-[#D61F26] hover:underline cursor-pointer"
                     >
@@ -262,6 +294,7 @@ export function AuthModal() {
                       onClick={() => {
                         setModalTab("login");
                         setError("");
+                        setInfoMessage("");
                       }}
                       className="font-bold text-[#D61F26] hover:underline cursor-pointer"
                     >

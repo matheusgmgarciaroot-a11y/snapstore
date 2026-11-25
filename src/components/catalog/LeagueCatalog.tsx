@@ -19,6 +19,7 @@ import {
 } from "./ConferenceFilterMatrix";
 import { JerseyCard } from "./JerseyCard";
 import { NbaSymbol, NflSymbol } from "./LeagueSymbols";
+import { TeamLogoBar } from "./TeamLogoBar";
 
 interface LeagueCatalogProps {
   structure: LeagueStructure;
@@ -42,13 +43,18 @@ export function LeagueCatalog({
   });
   const [editionFilter, setEditionFilter] = useState<"ALL" | JerseyEdition>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showMatrix, setShowMatrix] = useState(true);
+  const [showMatrix, setShowMatrix] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setOrderedJerseys(shuffleArray(jerseys));
       setHasShuffled(true);
+
+      // Show full division matrix expanded by default on desktop, collapsed on mobile (where TeamLogoBar is right on top)
+      if (window.innerWidth >= 1024) {
+        setShowMatrix(true);
+      }
 
       const params = new URLSearchParams(window.location.search);
       const teamParam = params.get("time");
@@ -70,6 +76,26 @@ export function LeagueCatalog({
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [jerseys, structure]);
+
+  const handleQuickLogoSelect = (teamId: string | null) => {
+    if (!teamId) {
+      setSelection({ conferenceId: null, divisionId: null, teamId: null });
+      return;
+    }
+    for (const conf of structure.conferences) {
+      for (const div of conf.divisions) {
+        const found = div.teams.find((t) => t.id === teamId);
+        if (found) {
+          setSelection({
+            conferenceId: conf.id,
+            divisionId: div.id,
+            teamId: found.id,
+          });
+          return;
+        }
+      }
+    }
+  };
 
   const handleManualShuffle = () => {
     setOrderedJerseys((prev) => shuffleArray(prev));
@@ -120,8 +146,17 @@ export function LeagueCatalog({
 
   return (
     <div className="flex-1 bg-[#F6F7F8] text-[#111317]">
+      {/* NFLShop-style 32-Team Quick Logo Filter Strip */}
+      {isNfl && (
+        <TeamLogoBar
+          variant="light"
+          selectedTeamId={selection.teamId}
+          onSelectTeam={handleQuickLogoSelect}
+        />
+      )}
+
       {/* Framed League Banner */}
-      <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-6">
+      <section className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-8 pt-4 sm:pt-6">
         <div className="relative rounded-[2px] overflow-hidden border border-[#E1E4E8] bg-[#111317] text-white">
           <Image
             src={bannerImage}
@@ -288,7 +323,7 @@ export function LeagueCatalog({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {filteredJerseys.map((jersey) => (
               <JerseyCard key={jersey.id} jersey={jersey} />
             ))}

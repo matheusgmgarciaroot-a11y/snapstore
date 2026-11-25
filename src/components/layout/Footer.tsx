@@ -91,6 +91,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/admin" className="hover:text-[#D61F26] transition-colors">
+                Painel Admin
+              </Link>
+            </li>
+            <li>
               <a
                 href={STORE_INSTAGRAM_URL}
                 target="_blank"

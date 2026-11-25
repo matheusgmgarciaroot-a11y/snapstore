@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { getItemUnitPrice, useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { saveOrder } from "@/lib/adminStore";
 import { formatBRL, getPixPrice } from "@/lib/format";
 import { JerseyGraphic } from "@/components/catalog/JerseyGraphic";
 
@@ -52,6 +53,34 @@ export default function CheckoutPage() {
     }
     setFormError("");
     const code = `SNP-${Math.floor(100000 + Math.random() * 900000)}`;
+    saveOrder({
+      id: `ord_${Date.now()}`,
+      code,
+      createdAt: new Date().toISOString(),
+      customerName: effectiveName.trim(),
+      customerEmail: effectiveEmail.trim(),
+      customerPhone: user.phone,
+      cep: cep.trim(),
+      address: address.trim(),
+      cityState: cityState.trim() || "Brasil",
+      paymentMethod,
+      items: items.map((item) => ({
+        jerseyId: item.jersey.id,
+        slug: item.jersey.slug,
+        title: item.jersey.title,
+        teamName: item.jersey.teamName,
+        size: item.size,
+        quantity: item.quantity,
+        unitPrice: getItemUnitPrice(item, comboActive),
+        customName: item.customName,
+        customNumber: item.customNumber,
+      })),
+      subtotal,
+      comboSavings,
+      shippingCost,
+      finalTotal,
+      status: paymentMethod === "pix" ? "Pendente" : "Pago",
+    });
     setOrderCode(code);
     clearCart();
   };

@@ -7,95 +7,128 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import type { User } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+export type UserRole = "customer" | "admin";
 
 export interface StoreUser {
   id: string;
   name: string;
   email: string;
   phone?: string;
-}
-
-interface StoredAccount extends StoreUser {
-  password: string;
+  role: UserRole;
+  createdAt: string;
 }
 
 type AuthTab = "login" | "register";
 
-interface AuthResult {
+export interface AuthResult {
   ok: boolean;
   error?: string;
+  message?: string;
+  needsEmailConfirmation?: boolean;
 }
 
 interface AuthContextValue {
   user: StoreUser | null;
+  loading: boolean;
   isModalOpen: boolean;
   modalTab: AuthTab;
   openAuthModal: (tab?: AuthTab) => void;
   closeAuthModal: () => void;
   setModalTab: (tab: AuthTab) => void;
-  login: (email: string, password: string) => AuthResult;
+  login: (email: string, password: string) => Promise<AuthResult>;
   register: (params: {
     name: string;
     email: string;
     phone?: string;
     password: string;
-  }) => AuthResult;
-  logout: () => void;
+  }) => Promise<AuthResult>;
+  logout: () => Promise<void>;
 }
-
-const USERS_KEY = "snap-store-users-v1";
-const SESSION_KEY = "snap-store-session-v1";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readStoredAccounts(): StoredAccount[] {
-  try {
-    const raw = window.localStorage.getItem(USERS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredAccount[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+function mapSupabaseUser(sbUser: User | null): StoreUser | null {
+  if (!sbUser) return null;
+  const meta = (sbUser.user_metadata ?? {}) as Record<string, unknown>;
+  const appMeta = (sbUser.app_metadata ?? {}) as Record<string, unknown>;
+  const email = sbUser.email ?? "";
+  const rawName = typeof meta.name === "string" ? meta.name.trim() : "";
+  const rawPhone = typeof meta.phone === "string" ? meta.phone.trim() : "";
+  const role: UserRole =
+    appMeta.role === "admin" || meta.role === "admin" ? "admin" : "customer";
+
+  return {
+    id: sbUser.id,
+    name: rawName || email.split("@")[0] || "Cliente",
+    email,
+    phone: rawPhone || undefined,
+    role,
+    createdAt: sbUser.created_at,
+  };
+}
+
+function translateAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos.";
   }
+  if (lower.includes("email not confirmed")) {
+    return "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada ou spam.";
+  }
+  if (lower.includes("user already registered")) {
+    return "Este e-mail já está cadastrado. Faça login na sua conta.";
+  }
+  if (lower.includes("password should be at least")) {
+    return "A senha deve ter pelo menos 6 caracteres.";
+  }
+  if (lower.includes("invalid email") || lower.includes("unable to validate email")) {
+    return "Informe um endereço de e-mail válido.";
+  }
+  if (lower.includes("rate limit")) {
+    return "Muitas tentativas em sequência. Aguarde alguns instantes e tente novamente.";
+  }
+  return message || "Não foi possível autenticar. Tente novamente.";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<StoreUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<AuthTab>("login");
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      try {
-        const raw = window.localStorage.getItem(SESSION_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as StoreUser;
-          if (parsed && parsed.email && parsed.name) {
-            setUser(parsed);
-          }
-        }
-      } catch {
-        // Ignore malformed storage
-      } finally {
-        setHydrated(true);
-      }
+    const supabase = getSupabaseBrowserClient();
+    let mounted = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setUser(mapSupabaseUser(data.session?.user ?? null));
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setUser(null);
+        setLoading(false);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setUser(mapSupabaseUser(session?.user ?? null));
+      setLoading(false);
     });
-    return () => window.cancelAnimationFrame(frameId);
-  }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      if (user) {
-        window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      } else {
-        window.localStorage.removeItem(SESSION_KEY);
-      }
-    } catch {
-      // Ignore storage quota errors
-    }
-  }, [user, hydrated]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const openAuthModal = useCallback((tab: AuthTab = "login") => {
     setModalTab(tab);
@@ -106,28 +139,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsModalOpen(false);
   }, []);
 
-  const login = useCallback((email: string, password: string): AuthResult => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !password) {
-      return { ok: false, error: "Informe seu e-mail e senha." };
-    }
-    const accounts = readStoredAccounts();
-    const match = accounts.find((acc) => acc.email === normalizedEmail);
-    if (!match || match.password !== password) {
-      return { ok: false, error: "E-mail ou senha incorretos." };
-    }
-    setUser({
-      id: match.id,
-      name: match.name,
-      email: match.email,
-      phone: match.phone,
-    });
-    setIsModalOpen(false);
-    return { ok: true };
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string): Promise<AuthResult> => {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail || !password) {
+        return { ok: false, error: "Informe seu e-mail e senha." };
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
+      if (error) {
+        return { ok: false, error: translateAuthError(error.message) };
+      }
+
+      setUser(mapSupabaseUser(data.user));
+      setIsModalOpen(false);
+      return { ok: true };
+    },
+    []
+  );
 
   const register = useCallback(
-    ({
+    async ({
       name,
       email,
       phone = "",
@@ -137,50 +174,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string;
       phone?: string;
       password: string;
-    }): AuthResult => {
+    }): Promise<AuthResult> => {
       const cleanName = name.trim();
       const normalizedEmail = email.trim().toLowerCase();
-      if (!cleanName || !normalizedEmail || password.length < 4) {
+      if (!cleanName || !normalizedEmail || password.length < 6) {
         return {
           ok: false,
-          error: "Preencha nome, e-mail válido e senha com pelo menos 4 caracteres.",
+          error:
+            "Preencha nome, e-mail válido e senha com pelo menos 6 caracteres.",
         };
       }
-      const accounts = readStoredAccounts();
-      if (accounts.some((acc) => acc.email === normalizedEmail)) {
-        return {
-          ok: false,
-          error: "Este e-mail já está cadastrado. Faça login na sua conta.",
-        };
-      }
-      const newAccount: StoredAccount = {
-        id: `usr_${Date.now()}`,
-        name: cleanName,
+
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
-        phone: phone.trim() || undefined,
         password,
-      };
-      try {
-        window.localStorage.setItem(
-          USERS_KEY,
-          JSON.stringify([...accounts, newAccount])
-        );
-      } catch {
-        // Ignore storage errors
-      }
-      setUser({
-        id: newAccount.id,
-        name: newAccount.name,
-        email: newAccount.email,
-        phone: newAccount.phone,
+        options: {
+          data: {
+            name: cleanName,
+            phone: phone.trim() || undefined,
+          },
+        },
       });
-      setIsModalOpen(false);
-      return { ok: true };
+
+      if (error) {
+        return { ok: false, error: translateAuthError(error.message) };
+      }
+
+      if (data.session?.user) {
+        setUser(mapSupabaseUser(data.session.user));
+        setIsModalOpen(false);
+        return { ok: true };
+      }
+
+      // Supabase created the user and requires email confirmation before first sign-in
+      return {
+        ok: true,
+        needsEmailConfirmation: true,
+        message:
+          "Cadastro realizado! Confirme seu e-mail pelo link enviado e depois faça login.",
+      };
     },
     []
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async (): Promise<void> => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
     setUser(null);
   }, []);
 
@@ -188,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        loading,
         isModalOpen,
         modalTab,
         openAuthModal,
