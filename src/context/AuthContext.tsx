@@ -103,6 +103,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = getSupabaseBrowserClient();
     let mounted = true;
 
+    if (!supabase) {
+      const frameId = window.requestAnimationFrame(() => {
+        if (!mounted) return;
+        setUser(null);
+        setLoading(false);
+      });
+      return () => {
+        mounted = false;
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+
     supabase.auth
       .getSession()
       .then(({ data }) => {
@@ -147,6 +159,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const supabase = getSupabaseBrowserClient();
+      if (!supabase) {
+        return {
+          ok: false,
+          error:
+            "Autenticação indisponível: configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY na Vercel.",
+        };
+      }
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -186,6 +205,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const supabase = getSupabaseBrowserClient();
+      if (!supabase) {
+        return {
+          ok: false,
+          error:
+            "Cadastro indisponível: configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY na Vercel.",
+        };
+      }
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -220,7 +246,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async (): Promise<void> => {
     const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
   }, []);
 

@@ -256,6 +256,10 @@ export function AdminDashboard() {
       return;
     }
     const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setPassError("Supabase não configurado neste ambiente.");
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newAdminPass });
     if (error) {
       setPassError(error.message);
